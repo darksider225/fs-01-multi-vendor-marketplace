@@ -1,7 +1,6 @@
 const mongoose = require('mongoose');
 const bcrypt = require('bcryptjs');
-
-const ROLES = ['admin', 'vendor', 'customer'];
+const { ROLES_LIST } = require('../constants/roles');
 
 const userSchema = new mongoose.Schema(
   {
@@ -27,7 +26,7 @@ const userSchema = new mongoose.Schema(
     },
     role: {
       type: String,
-      enum: { values: ROLES, message: 'Role must be admin, vendor or customer' },
+      enum: { values: ROLES_LIST, message: 'Role must be admin, vendor or customer' },
       default: 'customer',
     },
     phone: {

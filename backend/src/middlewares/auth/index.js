@@ -1,4 +1,4 @@
 const { authenticate } = require('./authenticate');
-const { authorize } = require('./authorize');
+const { authorize, isAdmin, isVendor, isCustomer } = require('./authorize');
 
-module.exports = { authenticate, authorize };
+module.exports = { authenticate, authorize, isAdmin, isVendor, isCustomer };
