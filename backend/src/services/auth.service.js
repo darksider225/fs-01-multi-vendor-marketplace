@@ -9,13 +9,13 @@ const buildAuthPayload = (user) => ({
   token: signToken({ sub: user._id.toString(), role: user.role }),
 });
 
-const registerUser = async ({ name, email, password, role = 'customer' }) => {
+const registerUser = async ({ name, email, password }) => {
   const existing = await User.findOne({ email });
   if (existing) {
     throw new ApiError(httpStatus.CONFLICT, 'An account with this email already exists.');
   }
-  // Password hashing happens in User's pre('save') hook (bcrypt, 12 rounds)
-  const user = await User.create({ name, email, password, role });
+  // Users always register as 'customer' — role is never accepted from client
+  const user = await User.create({ name, email, password, role: 'customer' });
   return buildAuthPayload(user);
 };
 

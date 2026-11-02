@@ -3,7 +3,7 @@ const ApiError = require('../../utils/apiError');
 const asyncHandler = require('../../utils/asyncHandler');
 const { sendSuccess } = require('../../utils/apiResponse');
 const httpStatus = require('../../constants/httpStatus');
-const { ROLES } = require('../../constants/roles');
+const { VENDOR_APPROVAL_STATUS, ROLES } = require('../../constants/statusCodes');
 
 /**
  * POST /api/v1/vendor/apply
@@ -12,10 +12,32 @@ const { ROLES } = require('../../constants/roles');
 const applyVendor = asyncHandler(async (req, res) => {
   const { storeName, slug, contactEmail, phone, description } = req.body;
 
-  // Prevent duplicate vendor profiles
+  // Check for existing vendor profile for this user
   const existingVendor = await Vendor.findOne({ user: req.user._id });
+
   if (existingVendor) {
-    throw new ApiError(httpStatus.CONFLICT, 'Vendor profile already exists for this account.');
+    if (existingVendor.approvalStatus === 'pending') {
+      throw new ApiError(httpStatus.CONFLICT, 'A vendor application is already pending.');
+    }
+    if (existingVendor.approvalStatus === 'approved') {
+      throw new ApiError(httpStatus.BAD_REQUEST, 'You are already an approved vendor.');
+    }
+    if (existingVendor.approvalStatus === 'rejected') {
+      // Allow resubmission by updating existing profile to pending
+      existingVendor.storeName = storeName;
+      existingVendor.slug = slug;
+      existingVendor.contactEmail = contactEmail;
+      existingVendor.phone = phone;
+      existingVendor.description = description;
+      existingVendor.approvalStatus = 'pending';
+      existingVendor.approvedBy = undefined;
+      existingVendor.approvedAt = undefined;
+      await existingVendor.save();
+
+      return sendSuccess(res, httpStatus.CREATED, 'Vendor application resubmitted successfully.', {
+        vendor: existingVendor.toJSON(),
+      });
+    }
   }
 
   const vendor = await Vendor.create({
@@ -25,7 +47,7 @@ const applyVendor = asyncHandler(async (req, res) => {
     contactEmail,
     phone,
     description,
-    status: 'pending',
+    approvalStatus: 'pending',
   });
 
   return sendSuccess(res, httpStatus.CREATED, 'Vendor application submitted successfully.', {

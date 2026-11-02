@@ -1,6 +1,5 @@
 const mongoose = require('mongoose');
-
-const VENDOR_STATUS = ['pending', 'approved', 'suspended', 'rejected'];
+const { VENDOR_APPROVAL_STATUS_LIST } = require('../constants/statusCodes');
 
 const vendorSchema = new mongoose.Schema(
   {
@@ -45,9 +44,9 @@ const vendorSchema = new mongoose.Schema(
       country: { type: String, trim: true },
       pincode: { type: String, trim: true },
     },
-    status: {
+    approvalStatus: {
       type: String,
-      enum: { values: VENDOR_STATUS, message: 'Invalid vendor status' },
+      enum: { values: VENDOR_APPROVAL_STATUS_LIST, message: 'Invalid vendor approval status' },
       default: 'pending',
     },
     approvedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
@@ -82,6 +81,6 @@ const vendorSchema = new mongoose.Schema(
 
 // --- Indexes ---
 vendorSchema.index({ storeName: 'text' }); // store search
-vendorSchema.index({ status: 1, rating: -1 }); // admin listing + marketplace browsing
+vendorSchema.index({ approvalStatus: 1, rating: -1 }); // admin listing + marketplace browsing
 
 module.exports = mongoose.model('Vendor', vendorSchema);

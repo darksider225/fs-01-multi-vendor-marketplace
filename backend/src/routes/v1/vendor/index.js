@@ -1,11 +1,11 @@
 const express = require('express');
 const { authenticate, authorize } = require('../../../middlewares/auth');
-const { ROLES } = require('../../../constants/roles');
+const { ROLES, VENDOR_APPROVAL_STATUS } = require('../../../constants/statusCodes');
 const validate = require('../../../middlewares/validate');
 const { vendorController } = require('../../../controllers/vendor');
 const { vendorProductController } = require('../../../controllers/vendor');
 const { applyValidator, profileValidator, settingsValidator } = require('../../../validators/vendor.validator');
-const { createProductValidator } = require('../../../validators/product.validator');
+const { createProductValidator, productIdValidator, updateProductValidator, productQueryValidator } = require('../../../validators/product.validator');
 
 const router = express.Router();
 
@@ -45,7 +45,16 @@ router.put(
   vendorController.updateVendorSettings
 );
 
-// Only Vendor ➜ Create Product
+// Product CRUD — only vendor can manage own products
+router.get(
+  '/products',
+  authenticate,
+  authorize(ROLES.VENDOR),
+  productQueryValidator,
+  validate,
+  vendorProductController.listProducts
+);
+
 router.post(
   '/products',
   authenticate,
@@ -55,4 +64,32 @@ router.post(
   vendorProductController.createProduct
 );
 
+router.get(
+  '/products/:id',
+  authenticate,
+  authorize(ROLES.VENDOR),
+  productIdValidator,
+  validate,
+  vendorProductController.getProduct
+);
+
+router.put(
+  '/products/:id',
+  authenticate,
+  authorize(ROLES.VENDOR),
+  updateProductValidator,
+  validate,
+  vendorProductController.updateProduct
+);
+
+router.delete(
+  '/products/:id',
+  authenticate,
+  authorize(ROLES.VENDOR),
+  productIdValidator,
+  validate,
+  vendorProductController.deleteProduct
+);
+
 module.exports = router;
+

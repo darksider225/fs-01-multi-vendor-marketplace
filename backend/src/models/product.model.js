@@ -1,21 +1,6 @@
 const mongoose = require('mongoose');
 
-const PRODUCT_STATUS = ['draft', 'published', 'unpublished', 'archived'];
-
-const variantSchema = new mongoose.Schema(
-  {
-    name: { type: String, required: [true, 'Variant name is required'], trim: true },
-    sku: { type: String, sparse: true, unique: true, trim: true },
-    price: {
-      type: Number,
-      required: [true, 'Variant price is required'],
-      min: [0, 'Variant price cannot be negative'],
-    },
-    stock: { type: Number, default: 0, min: [0, 'Variant stock cannot be negative'] },
-    attributes: { type: Map, of: String }, // e.g. { size: 'M', color: 'Red' }
-  },
-  { _id: false }
-);
+const { PRODUCT_STATUS_LIST } = require('../constants/statusCodes');
 
 const productSchema = new mongoose.Schema(
   {
@@ -34,7 +19,6 @@ const productSchema = new mongoose.Schema(
       required: [true, 'Product title is required'],
       trim: true,
       maxlength: [200, 'Product title cannot exceed 200 characters'],
-      alias: 'name', // required schema field; `name` stays as an alias for existing consumers (e.g. order snapshots)
     },
     slug: {
       type: String,
@@ -44,30 +28,23 @@ const productSchema = new mongoose.Schema(
       trim: true,
     },
     description: { type: String, trim: true, maxlength: [5000, 'Description cannot exceed 5000 characters'] },
-    brand: { type: String, trim: true },
     images: { type: [String], default: [] },
     price: {
       type: Number,
       required: [true, 'Product price is required'],
       min: [0, 'Product price cannot be negative'],
     },
-    compareAtPrice: { type: Number, min: [0, 'Compare-at price cannot be negative'] },
-    costPrice: { type: Number, min: [0, 'Cost price cannot be negative'] }, // vendor-only analytics
-    currency: { type: String, default: 'USD', uppercase: true, trim: true },
     stock: { type: Number, required: true, default: 0, min: [0, 'Stock cannot be negative'] },
-    soldCount: { type: Number, default: 0, min: [0, 'Sold count cannot be negative'] },
-    sku: { type: String, sparse: true, unique: true, trim: true },
-    attributes: { type: Map, of: String },
-    variants: { type: [variantSchema], default: [] },
+    sku: { type: String, sparse: true, unique: false },
     status: {
       type: String,
-      enum: { values: PRODUCT_STATUS, message: 'Invalid product status' },
+      enum: { values: PRODUCT_STATUS_LIST, message: 'Invalid product status' },
       default: 'published',
     },
-    isActive: { type: Boolean, default: false },
-    isFeatured: { type: Boolean, default: false },
-    avgRating: { type: Number, default: 0, min: 0, max: 5 }, // denormalized from reviews
+    avgRating: { type: Number, default: 0, min: 0, max: 5 },
     ratingCount: { type: Number, default: 0, min: 0 },
+    isDeleted: { type: Boolean, default: false },
+    deletedAt: { type: Date },
   },
   {
     timestamps: true,
@@ -77,23 +54,40 @@ const productSchema = new mongoose.Schema(
         ret.id = ret._id.toString();
         delete ret._id;
         delete ret.__v;
-        delete ret.costPrice; // never expose cost to customers
+        delete ret.isDeleted;
+        delete ret.deletedAt;
       },
     },
-    toObject: { virtuals: true },
   }
 );
 
-productSchema.pre('validate', function () {
-  if (!this.slug && this.title) {
-    this.slug = this.title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
+productSchema.pre('validate', async function () {
+  if (this.isModified('title') && !this.slug) {
+    const baseSlug = this.title
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/^-+|-+$/g, '');
+    const timestamp = Date.now();
+    this.slug = `${baseSlug}-${timestamp}`;
   }
 });
 
-// --- Indexes ---
-productSchema.index({ title: 'text', brand: 'text' }); // product search
-productSchema.index({ vendor: 1, category: 1 }); // vendor catalog by category
-productSchema.index({ isActive: 1, category: 1 }); // marketplace browse
-productSchema.index({ price: 1 }); // price sorting
+productSchema.pre('save', async function () {
+  if (this.isModified('slug') || this.isNew) {
+    const existing = await this.constructor.findOne({ slug: this.slug, _id: { $ne: this._id } });
+    if (existing) {
+      const baseSlug = this.slug.replace(/-\d+$/, '');
+      this.slug = `${baseSlug}-${Date.now()}`;
+    }
+  }
+});
+
+productSchema.index({ title: 'text' });
+productSchema.index({ vendor: 1, category: 1 });
+productSchema.index({ status: 1, category: 1 });
+productSchema.index({ price: 1 });
+
+// Vendor + sku compound index — unique per vendor, allows duplicates across vendors
+productSchema.index({ vendor: 1, sku: 1 }, { sparse: true });
 
 module.exports = mongoose.model('Product', productSchema);

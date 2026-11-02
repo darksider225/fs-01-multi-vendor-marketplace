@@ -1,4 +1,5 @@
 const { run: seedAdmin } = require('./admin.seeder');
+const { seedCategories } = require('./categorySeeder');
 
 /**
  * Seed dispatcher — add future seeders here (categories, demo vendors, etc.).
@@ -7,6 +8,7 @@ const { run: seedAdmin } = require('./admin.seeder');
 const runAll = async () => {
   console.log('Running seeders…');
   await seedAdmin();
+  await seedCategories();
   console.log('All seeders finished.');
 };
 

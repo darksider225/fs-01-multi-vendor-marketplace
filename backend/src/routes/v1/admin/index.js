@@ -1,6 +1,6 @@
 const express = require('express');
 const { authenticate, authorize } = require('../../../middlewares/auth');
-const { ROLES } = require('../../../constants/roles');
+const { ROLES, VENDOR_APPROVAL_STATUS } = require('../../../constants/statusCodes');
 const validate = require('../../../middlewares/validate');
 const { adminVendorController } = require('../../../controllers/admin');
 const { approveValidator } = require('../../../validators/vendor.validator');
