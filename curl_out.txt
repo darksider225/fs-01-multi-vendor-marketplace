@@ -1,0 +1,12 @@
+HTTP/1.1 200 OK
+x-amz-id-2: NV+zlsjldYVa71YZU6muSZtDK2z5W+B+WQjI8t5YDh76bsy1kdL6z41q60Vc9epwwLGkHp5vjcHSzVq26qj2hBU9ivYujH5k
+x-amz-request-id: D084R2F8C155YC49
+Server: AmazonS3
+Date: Wed, 04 Nov 2026 15:39:48 GMT
+Last-Modified: Wed, 04 Nov 2026 15:11:34 GMT
+ETag: "06f8b3c2bf028a39d52f8a84a61ba6a1"
+x-amz-server-side-encryption: AES256
+Accept-Ranges: bytes
+Content-Length: 10
+Content-Type: image/jpeg
+
