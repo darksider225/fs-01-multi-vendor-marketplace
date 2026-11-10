@@ -24,7 +24,16 @@ const paymentSchema = new mongoose.Schema(
       enum: { values: PAYMENT_METHODS, message: 'Invalid payment method' },
     },
     provider: { type: String, trim: true }, // e.g. stripe / razorpay
+    paymentGateway: { type: String, trim: true, enum: { values: ['stripe', 'razorpay', null], message: 'Invalid payment gateway' }, default: null },
+    razorpayOrderId: { type: String, sparse: true, unique: true, trim: true },
+    razorpayPaymentId: { type: String, sparse: true, trim: true },
     transactionId: { type: String, sparse: true, unique: true, trim: true },
+    stripePaymentIntentId: { type: String, sparse: true, unique: true, trim: true },
+    stripeChargeId: { type: String, sparse: true, unique: true, trim: true },
+    receiptUrl: { type: String, trim: true },
+    failureReason: { type: String, trim: true },
+    refundAmount: { type: Number, min: [0, 'Refund amount cannot be negative'], default: 0 },
+    stripeRefundId: { type: String, sparse: true, trim: true },
     amount: {
       type: Number,
       required: [true, 'Payment amount is required'],

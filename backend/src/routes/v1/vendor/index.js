@@ -4,6 +4,7 @@ const { ROLES, VENDOR_APPROVAL_STATUS } = require('../../../constants/statusCode
 const validate = require('../../../middlewares/validate');
 const { vendorController } = require('../../../controllers/vendor');
 const { vendorProductController } = require('../../../controllers/vendor');
+const orderController = require('../../../controllers/order.controller');
 const { applyValidator, profileValidator, settingsValidator } = require('../../../validators/vendor.validator');
 const { createProductValidator, productIdValidator, updateProductValidator, productQueryValidator } = require('../../../validators/product.validator');
 
@@ -89,6 +90,14 @@ router.delete(
   productIdValidator,
   validate,
   vendorProductController.deleteProduct
+);
+
+// Vendor Orders — vendor sees orders containing their products
+router.get(
+  '/orders',
+  authenticate,
+  authorize(ROLES.VENDOR),
+  orderController.getVendorOrders
 );
 
 module.exports = router;

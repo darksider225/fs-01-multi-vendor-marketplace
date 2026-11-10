@@ -14,4 +14,5 @@ module.exports = {
   Review: require('./review.model'),
   Coupon: require('./coupon.model'),
   Payment: require('./payment.model'),
+  ProcessedWebhook: require('./processedWebhook.model'),
 };
